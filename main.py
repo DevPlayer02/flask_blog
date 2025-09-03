@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -11,6 +11,15 @@ class Post(db.Model):
     title = db.Column(db.String())
     content = db.Column(db.String())
     author = db.Column(db.String())
+
+    def to_dict(self):
+        result = {}
+        for key in self.__mapper__.c.keys():
+            if getattr(self, key) is not None:
+                result[key] = str(getattr(self, key))
+            else:
+                result[key] = getattr(self, key)
+        return result
 
 @app.route("/")
 def home():
@@ -63,6 +72,57 @@ def edit_post(id):
             print("Error: ", error)
 
     return redirect(url_for("home"))
+
+
+@app.route("/api/posts")
+def api_list_posts():
+    try:
+        posts = Post.query.all()
+        return jsonify([post.to_dict() for post in posts])
+    except Exception as error:
+        print("Error: ", error)
+    return jsonify([])
+
+@app.route("/api/post", methods=["POST"])
+def api_add_post():
+    try:
+        data = request.get_json()
+        post = Post(title=data["title"], author = data["author"], content=data["content"])
+        db.session.add(post)
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as error:
+        return print('Error: ', error)
+
+    return jsonify({"success": False})
+
+
+@app.route("/api/post/<id>", methods=["DELETE"])
+def api_delete_post(id):
+    try:
+        post = Post.query.get(id)
+        db.session.delete(post)
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as error:
+        print("Error", error)
+
+    return jsonify({"success": False})
+
+@app.route("/api/post/<id>", methods=["PUT"])
+def api_edit_post(id):
+    try:
+        post = Post.query.get(id)
+        data = request.get_json()
+        post.title = data["title"]
+        post.author = data["author"]
+        post.content = data["content"]
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as error:
+        print("Error: ", error)
+
+    return jsonify({"success": False})
 
 db.create_all()
 app.run(debug=True)
