@@ -26,11 +26,15 @@ cd flask_blog
 
 2. Crie um ambiente virtual:
 
+```bash
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
 venv\Scripts\activate     # Windows
+```
 
 3. Instale as dependências:
 
+```bash
 pip install Flask Flask-SQLAlchemy
+```
 
